@@ -44,10 +44,14 @@ A powerful web-based interface for Qwen2.5-Coder-7B-Instruct with integrated ter
 
 ## Quick Start
 
-### Quick Setup for Jetson Nano via SSH
+### Quick Setup for Jetson Nano
 ```bash
-# One-liner to get started quickly on your Jetson
-ssh user@jetson-ip "git clone https://github.com/Superman-arch/Agency-Code-main.git && cd Agency-Code-main/qwen-coder-interface && chmod +x jetson_deployment/deploy.sh && ./jetson_deployment/deploy.sh"
+# SSH into Jetson and run these commands:
+ssh username@jetson-ip
+rm -rf Agency-Code-main  # Remove if exists
+git clone https://github.com/Superman-arch/Agency-Code-main.git
+cd Agency-Code-main/qwen-coder-interface
+./jetson_deployment/deploy.sh
 ```
 
 ### Local Development
@@ -107,29 +111,40 @@ docker-compose -f docker/docker-compose.yml up -d
 
 ## Jetson Orin Nano Deployment
 
-### SSH Deployment from Remote Machine
-```bash
-# 1. SSH into your Jetson Nano
-ssh your-username@jetson-ip-address
+### Step-by-Step SSH Setup
 
-# 2. Clone the repository
+#### First-Time Setup
+```bash
+# 1. SSH into your Jetson
+ssh username@jetson-ip
+
+# 2. Remove any existing clone (if present)
+rm -rf Agency-Code-main
+
+# 3. Clone the repository
 git clone https://github.com/Superman-arch/Agency-Code-main.git
+
+# 4. Navigate to the project
 cd Agency-Code-main/qwen-coder-interface
 
-# 3. Run the automated deployment
+# 5. Make deployment script executable
 chmod +x jetson_deployment/deploy.sh
+
+# 6. Run the deployment
 ./jetson_deployment/deploy.sh
 ```
 
-### Local Deployment (when directly on Jetson)
+#### Quick Reinstall (if already cloned)
 ```bash
-# Clone and navigate to project
-git clone https://github.com/Superman-arch/Agency-Code-main.git
-cd Agency-Code-main/qwen-coder-interface
-
-# Run the deployment script
-chmod +x jetson_deployment/deploy.sh
+ssh username@jetson-ip
+cd ~/Agency-Code-main/qwen-coder-interface
+git pull
 ./jetson_deployment/deploy.sh
+```
+
+#### Complete Clean Install (One-Liner)
+```bash
+ssh username@jetson-ip "cd ~ && rm -rf Agency-Code-main && git clone https://github.com/Superman-arch/Agency-Code-main.git && cd Agency-Code-main/qwen-coder-interface && chmod +x jetson_deployment/deploy.sh && ./jetson_deployment/deploy.sh"
 ```
 
 ### Manual Optimization
@@ -272,27 +287,53 @@ IS_JETSON=auto-detected
 
 ## Troubleshooting
 
-### Common Issues
+### Common Jetson Setup Issues
 
-1. **CUDA not available**
+1. **"destination path 'Agency-Code-main' already exists"**
 ```bash
-# Check CUDA installation
-python -c "import torch; print(torch.cuda.is_available())"
+# Remove the existing directory and re-clone
+rm -rf Agency-Code-main
+git clone https://github.com/Superman-arch/Agency-Code-main.git
 ```
 
-2. **Model download fails**
+2. **"No such file or directory: Agency-Code-main/qwen-coder-interface"**
 ```bash
-# Use local cache
-export HF_HOME=/path/to/cache
+# Make sure you're in the right directory
+cd ~/Agency-Code-main
+ls  # Should show qwen-coder-interface folder
+cd qwen-coder-interface
 ```
 
-3. **Out of memory on Jetson**
+3. **Out of memory during model download**
 ```bash
-# Enable swap
-sudo fallocate -l 8G /swapfile
+# Enable larger swap BEFORE running deployment
+sudo fallocate -l 16G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
+
+# Then run deployment
+./jetson_deployment/deploy.sh
+```
+
+4. **CUDA not available**
+```bash
+# Check CUDA installation
+python3 -c "import torch; print(torch.cuda.is_available())"
+
+# If false, ensure JetPack is properly installed
+sudo apt-get update
+sudo apt-get install nvidia-jetpack
+```
+
+5. **Model download fails or is slow**
+```bash
+# Use local cache and retry
+export HF_HOME=~/huggingface_cache
+mkdir -p $HF_HOME
+
+# Or download model manually first
+python3 -c "from transformers import AutoModelForCausalLM; AutoModelForCausalLM.from_pretrained('Qwen/Qwen2.5-Coder-7B-Instruct', cache_dir='$HF_HOME')"
 ```
 
 ## Contributing
