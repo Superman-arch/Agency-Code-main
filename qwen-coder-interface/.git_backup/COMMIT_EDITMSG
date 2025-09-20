@@ -1,0 +1,8 @@
+Fix README with correct GitHub URLs and add Jetson SSH deployment instructions
+
+- Updated all repository URLs from placeholder to Superman-arch/Agency-Code-main
+- Fixed directory navigation to account for qwen-coder-interface subdirectory
+- Added SSH deployment section specifically for Jetson Nano setup
+- Added quick one-liner SSH deployment command
+- Updated author information and citation
+- Fixed support/documentation links to point to correct repository

@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  qwen-coder:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: qwen-coder-interface:latest
+    container_name: qwen-coder
+    ports:
+      - "8000:8000"  # Backend API
+      - "3000:3000"  # Frontend
+    environment:
+      - MODEL_NAME=Qwen/Qwen2.5-Coder-7B-Instruct
+      - MODEL_DEVICE=cuda
+      - USE_QUANTIZATION=false
+      - TERMINAL_MAX_OUTPUT=10000
+      - TERMINAL_TIMEOUT=30
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - CORS_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
+      - DATABASE_URL=sqlite:///app/data/sessions.db
+      - MODEL_CACHE_DIR=/app/model_cache
+    volumes:
+      - model_cache:/app/model_cache
+      - app_data:/app/data
+      - workspace:/workspace
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - qwen-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: qwen-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - qwen-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: qwen-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - qwen-coder
+    restart: unless-stopped
+    networks:
+      - qwen-network
+
+volumes:
+  model_cache:
+    driver: local
+  app_data:
+    driver: local
+  redis_data:
+    driver: local
+  workspace:
+    driver: local
+
+networks:
+  qwen-network:
+    driver: bridge
